@@ -1,12 +1,12 @@
 import api from "../../api";
 import toast from "react-hot-toast";
 
-export default function DeleteModalContent({data,onSuccess,itemType}){
+export default function DeleteModalContent({data,onSuccess,itemType,type}){
 
 
     const deleteStudent = async ()=>{
         try{
-            const response = await api.delete(`/students/${data.id}`);
+            const response = await api.delete(`/${type}/${data.id}`);
             onSuccess(response.data);
         }
         catch (error){

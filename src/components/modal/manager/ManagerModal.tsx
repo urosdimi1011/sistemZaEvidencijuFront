@@ -3,30 +3,19 @@ import {Spinner} from "@fluentui/react-components";
 import Modal from "../../modal/Modal";
 
 // Lazy load forms for better performance
-const AddStudentsForm = lazy(() => import('../../forms/AddStudentsForm'));
-const StudentDetails = lazy(() => import('../../table/StudentDetails'));
+const AddMenadzerForm = lazy(() => import('../../forms/AddMenadzerForm'));
 const DeleteModalContent = lazy(() => import('../../modal/DeleteModalContent'));
 
-export default function StudentsModal({ isOpen, config, onClose, onSuccess }) {
+export default function ManagerModal({ isOpen, config, onClose, onSuccess }) {
     const renderContent = () => {
         switch(config.viewType) {
             case 'add':
-                return <AddStudentsForm onSuccess={(data) => onSuccess('add', data)} />;
-            case 'details':
-                return <StudentDetails
-                    student={config.student}
-                    onSuccess={onClose}
-                />;
-            case 'edit':
-                return <AddStudentsForm
-                    student={config.student}
-                    onSuccess={(data) => onSuccess('edit', data)}
-                />;
+                return <AddMenadzerForm onSuccess={(data) => onSuccess('add', data)} />;
             case 'delete':
                 return <DeleteModalContent
-                    data={config.student}
-                    type='students'
-                    itemType="Studenta"
+                    data={config.menadzer}
+                    type='menadzeri'
+                    itemType="Menadzera"
                     onSuccess={(data) => onSuccess('delete', data)}
                 />;
             default:

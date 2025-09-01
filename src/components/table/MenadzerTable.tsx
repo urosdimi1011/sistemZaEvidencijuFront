@@ -23,8 +23,14 @@ const columns = [
     { columnKey: "actions", label: "Akcija" },
 
 ];
-function MenadzerTable({menadzeri}){
+function MenadzerTable({menadzeri,kliknutoNaDugmeDelete}){
     console.log(menadzeri);
+
+    const otvoriModalZaDelete = (e,item)=>{
+        e.stopPropagation();
+        kliknutoNaDugmeDelete(item);
+    }
+
     return (
         <Table
             noNativeElements
@@ -61,7 +67,7 @@ function MenadzerTable({menadzeri}){
                         <TableCell role="gridcell" tabIndex={0} >
                             <TableCellLayout>
                                 <Button icon={<EditRegular />} aria-label="Edit" />
-                                <Button icon={<DeleteRegular />} aria-label="Delete" />
+                                <Button onClick={(e)=>otvoriModalZaDelete(e,item)} icon={<DeleteRegular />} aria-label="Delete" />
                             </TableCellLayout>
                         </TableCell>
                     </TableRow>

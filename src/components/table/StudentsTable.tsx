@@ -78,7 +78,6 @@ function StudentTable({studenti,kliknutiRed,obojeniRedovi,obojeniRedoviZaMenadze
             <Table
                 noNativeElements
                 aria-label="Table without semantic HTML elements"
-                style={{ minWidth: "500px",height:"50vh" }}
             >
                 <TableHeader>
                     <TableRow>

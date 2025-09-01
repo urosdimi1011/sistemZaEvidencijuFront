@@ -22,13 +22,20 @@ export default function SchoolEnrollmentStats() {
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState<SchoolEnrollmentData[]>([]);
+    const [availableYears, setAvailableYears] = useState([]);
+
+    const yearOptions = availableYears.map(year => ({
+        value: year,
+        label: year.toString()
+    }));
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const response = await api.get(`/statistics/monthly-enrollment-aggregated?year=${selectedYear}`);
-                setData(response.data);
+                const {data} = await api.get(`/statistics/monthly-enrollment-aggregated?year=${selectedYear}`);
+                setData(data.schools);
+                setAvailableYears(data.availableYears);
             } catch (error) {
                 console.error('Greška pri učitavanju:', error);
             } finally {
@@ -38,11 +45,6 @@ export default function SchoolEnrollmentStats() {
 
         fetchData();
     }, [selectedYear]);
-
-    const yearOptions = [];
-    for (let year = 2020; year <= new Date().getFullYear(); year++) {
-        yearOptions.push({ value: year, label: year.toString() });
-    }
 
     if (loading) {
         return <div>Učitavanje...</div>;
