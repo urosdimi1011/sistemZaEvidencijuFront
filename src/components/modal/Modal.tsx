@@ -6,7 +6,7 @@ import {FluentProvider, Toaster, useId, webLightTheme} from '@fluentui/react-com
 interface ModalProps {
     isOpen: boolean;
     onClose: () => void;
-    title?: string;
+    title?: string | ReactNode;
     children: ReactNode;
 }
 

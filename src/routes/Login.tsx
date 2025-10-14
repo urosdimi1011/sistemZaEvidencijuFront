@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router';
+import {useLocation, useNavigate} from 'react-router';
 import axios from '../api';
 import {MyInput} from "../components/ui/MyInput";
 import {Resolver, useForm} from "react-hook-form";
 import {yupResolver} from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import {useAuth} from "../Provides/AuthProvider";
-// import Login, { Render } from 'react-login-page';
+import {SpinButton, Spinner} from "@fluentui/react-components";
 
 
 interface User {
@@ -18,16 +18,15 @@ export default function LoginForm() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
     const location = useLocation();
 
-    const from = location.state?.from?.pathname || '/'; // Rutu preusmeravanja nakon logina
+    const from = location.state?.from?.pathname || '/';
 
     const schema = yup.object({
         email: yup.string().trim().min(2,'Morate uneti barem 5 karaktera za email').required('Email je obavezno'),
         password: yup.string().min(2,'Morate uneti barem dva karaktera za password').trim().required('Password je obavezno'),
     }).required();
-
+    const navigation = useNavigate();
     const {
         register,
         handleSubmit,
@@ -44,7 +43,9 @@ export default function LoginForm() {
         try {
             await handleLogin(data);
             setLoading(false);
-
+            setTimeout(() => {
+                navigation('/ucenici');
+            }, 100);
         } catch (err: any) {
             setLoading(false);
             setError(err.response?.data?.message || err.message);
@@ -62,8 +63,8 @@ export default function LoginForm() {
                <MyInput {...register('password')} name='password' type='password' label={'Unesite password'}></MyInput>
                {errors.password && <div className="text-red-900 text-shadow">{errors.password.message}</div>}
 
-               <button className='mt-10' type="submit">
-                   Uloguj se
+               <button disabled={loading ?? false} className='mt-10' type="submit">
+                   {loading ? <Spinner></Spinner> : "Uloguj se"}
                </button>
                <p className='text-red-900 font-bold mt-5'>{error}</p>
            </form>

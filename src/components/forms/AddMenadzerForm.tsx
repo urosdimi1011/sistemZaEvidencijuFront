@@ -5,17 +5,20 @@ import * as yup from 'yup';
 import { useForm, Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import api from "../../api";
+import {Button} from "@fluentui/react-components";
 interface Menadzer {
+    id?:number;
     ime: string;
     prezime: string;
 }
 
 interface AddMenadzerFormProps {
     onSuccess?: (noviMenadzer: Menadzer) => void;
+    menadzer? : Menadzer
 }
 
 
-export default function AddMenadzerForm({ onSuccess } : AddMenadzerFormProps) {
+export default function AddMenadzerForm({ onSuccess,menadzer } : AddMenadzerFormProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [form, setForm] = useState<Menadzer>({
@@ -30,17 +33,29 @@ export default function AddMenadzerForm({ onSuccess } : AddMenadzerFormProps) {
         setForm(prev => ({ ...prev, [name]: value }));
     };
 
-
     const onSubmit = async (data : Menadzer)=>{
         setLoading(true);
         setError(null);
 
         try {
-            console.log(form);
-            const response = await api.post<Menadzer>(
-                '/menadzeri',
-                data
-            );
+            let response = null;
+
+            if(menadzer !== undefined){
+                response = await api.patch(`/menadzeri/${menadzer.id}`,data,{
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+            }
+            else{
+                console.log(form);
+                response = await api.post<Menadzer>(
+                    '/menadzeri',
+                    data
+                );
+            }
+
+
             setLoading(false);
 
             // Obavesti roditelja o uspehu (npr. da osveži listu)
@@ -61,21 +76,23 @@ export default function AddMenadzerForm({ onSuccess } : AddMenadzerFormProps) {
     const {
         register,
         handleSubmit,
+        control,
         formState: { errors },
     } = useForm<Menadzer>({
-        resolver: yupResolver(schema) as Resolver<Menadzer, object, Menadzer>
+        resolver: yupResolver(schema) as Resolver<Menadzer, object, Menadzer>,
+        defaultValues: menadzer != null ? {ime : menadzer.ime, prezime : menadzer.prezime} : {ime : '',prezime: ''}
     });
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
             {error && <div className="error">{error}</div>}
 
-            <MyInput {...register('ime')} label={'Unesite ime menadzera'} name={'ime'} onChange={handleChange}></MyInput>
+            <MyInput {...register('ime')} control={control} label={'Unesite ime menadzera'} name={'ime'} onChange={handleChange}></MyInput>
             {errors.ime && <div className="text-red-900 text-shadow">{errors.ime.message}</div>}
-            <MyInput {...register('prezime')} label={'Unesite prezime menadzera'} name={'prezime'} onChange={handleChange}></MyInput>
+            <MyInput {...register('prezime')} control={control} label={'Unesite prezime menadzera'} name={'prezime'} onChange={handleChange}></MyInput>
             {errors.prezime && <div className="text-red-900">{errors.prezime.message}</div>}
-            <button type="submit" disabled={loading}>
-                {loading ? 'Sačekajte...' : 'Dodaj Menadžera'}
-            </button>
+            <Button className='!mt-10 !mb-5' type="submit" disabled={loading}>
+                {loading ? 'Sačekajte...' : menadzer !== undefined ? 'Edituj menadžera' : 'Dodaj menadžera'}
+            </Button>
         </form>
     );
 }

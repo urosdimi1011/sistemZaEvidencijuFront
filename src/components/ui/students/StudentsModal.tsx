@@ -15,7 +15,7 @@ export default function StudentsModal({ isOpen, config, onClose, onSuccess }) {
             case 'details':
                 return <StudentDetails
                     student={config.student}
-                    onSuccess={onClose}
+                    onSuccess={()=> onSuccess('editPayment')}
                 />;
             case 'edit':
                 return <AddStudentsForm

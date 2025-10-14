@@ -6,8 +6,11 @@ import { useForm, Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import toast from "react-hot-toast";
 import api from "../../api";
+import {Button, Field, Textarea} from "@fluentui/react-components";
 interface Paymant {
     iznosZaUplatu: number;
+    datumUplate : string;
+    note : string;
 }
 
 interface PaymantResponse {
@@ -27,7 +30,9 @@ export default function PaymantForm({id,onSuccess}) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [form, setForm] = useState<Paymant>({
-        iznosZaUplatu: 0
+        iznosZaUplatu: 0,
+        datumUplate : '',
+        note : ''
     });
 
     const handleChange = (
@@ -39,17 +44,23 @@ export default function PaymantForm({id,onSuccess}) {
 
 
     const onSubmit = async (data : Paymant)=>{
+
+        const transformedData = {
+            ...data,
+            iznosZaUplatu: isNaN(data.iznosZaUplatu) ? 0 : data.iznosZaUplatu
+        };
+
         setLoading(true);
         setError(null);
 
         try {
             const response = await api.post<PaymantResponse>(
                 `/payments/${id}`,
-                data
+                transformedData
             );
             setLoading(false);
 
-            setForm({ iznosZaUplatu : 0 });
+            setForm({ iznosZaUplatu : 0,datumUplate : '', note : '' });
             onSuccess(true);
             toast.success(response.data.message);
         } catch (err: any) {
@@ -58,7 +69,16 @@ export default function PaymantForm({id,onSuccess}) {
         }
     }
     const schema = yup.object({
-        iznosZaUplatu: yup.number().min(2,'Morate uneti barem 2 cifre'),
+        iznosZaUplatu: yup
+            .number()
+            .typeError('Morate uneti cifru za plaćanje')
+            .required('Morate uneti vrednost')
+            .min(1, 'Vrednost mora biti veća od 0')
+            .positive('Vrednost mora biti pozitivna'),
+        datumUplate: yup
+            .string()
+            .required('Morate uneti datum uplate'),
+        note : yup.string().nullable()
     }).required();
 
     const {
@@ -71,12 +91,26 @@ export default function PaymantForm({id,onSuccess}) {
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
 
-            <MyInput type='number' {...register('iznosZaUplatu')} label={'Unesite koliko je učenik uplatio?'} name={'iznosZaUplatu'} onChange={handleChange}></MyInput>
+            <MyInput autoFocus type='number' {...register('iznosZaUplatu',
+                { valueAsNumber: true,
+                        validate: value => !isNaN(value) || "Molimo unesite valjan broj",
+                        setValueAs: value => value === "" ? 0 : Number(value) }
+            )}
+                     label={'Unesite koliko je učenik uplatio?'}
+                     name={'iznosZaUplatu'}></MyInput>
             {errors.iznosZaUplatu && <div className="text-red-900 text-shadow">{errors.iznosZaUplatu.message}</div>}
 
-            <button className='my-5' type="submit" disabled={loading}>
+            <MyInput  {...register('datumUplate')} type='datetime-local' label={'Datum kada je uplatio'} name={'datumUplate'}/>
+            {errors.datumUplate && <div className="text-red-900 text-shadow">{errors.datumUplate.message}</div>}
+
+            <Field label="Unesite napomenu (opciono)">
+                <Textarea placeholder="Unesite napomenu..." {...register('note')}/>
+            </Field>
+            {errors.note && <div className="text-red-900 text-shadow">{errors.note.message}</div>}
+
+            <Button className='!my-5' type="submit" disabled={loading}>
                 {loading ? 'Sačekajte...' : 'Dodaj iznos za uplatu'}
-            </button>
+            </Button>
             {error && <div className="error text-red-900 font-bold my-3">{error}</div>}
 
         </form>

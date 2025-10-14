@@ -3,9 +3,10 @@ import Select from "react-select";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import api from "../api";
 import {Button} from "@fluentui/react-components";
-import {Dismiss24Regular} from "@fluentui/react-icons";
+import {Dismiss24Regular,ChevronRight24Regular,ChevronLeft24Regular,Search24Regular} from "@fluentui/react-icons";
 import SchoolEnrollmentStats from "../components/ui/SchoolEnrollmentStats";
 import {ManagersSalary} from "../components/ui/ManagersSalary";
+import {MyInput} from "../components/ui/MyInput";
 
 interface ManagerStats {
     managerId: number;
@@ -30,6 +31,14 @@ const optionsMy: Option[] = [
     { id: 3, value: "month", label: "Mesečno" },
 ];
 
+interface PaginationInfo {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+}
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
 export default function Home() {
@@ -40,6 +49,28 @@ export default function Home() {
     const [availableYears, setAvailableYears] = useState<Option[]>([]);
     const [chartType, setChartType] = useState<"bar" | "line" | "pie">("bar");
     const [showMonthlyStats, setShowMonthlyStats] = useState(false);
+
+
+
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [timeRange, selectedYear, debouncedSearchTerm]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
 
     const handleTimeRangeChange = (selectedOption: Option | null) => {
         setTimeRange(selectedOption);
@@ -54,9 +85,16 @@ export default function Home() {
                 params.append('range', timeRange.value);
             }
 
+            if (debouncedSearchTerm) {
+                params.append('search', debouncedSearchTerm);
+            }
+
             if (selectedYear?.value) {
                 params.append('year', selectedYear.value);
             }
+
+            params.append('page', currentPage.toString());
+            params.append('limit', '10');
 
             if (params.toString()) {
                 url += `?${params.toString()}`;
@@ -64,6 +102,7 @@ export default function Home() {
 
             const { data } = await api(url);
             setStats(data.managers || data);
+            setPagination(data.pagination);
 
             // Ažuriraj dostupne godine
             if (data.availableYears) {
@@ -82,12 +121,39 @@ export default function Home() {
     };
     useEffect(() => {
         fetchManagerStats();
-    }, [timeRange, selectedYear]);
+    }, [timeRange, selectedYear,currentPage,debouncedSearchTerm]);
 
     const handleSelectedYear = (selectedYear: Option | null) => {
         setSelectedYear(selectedYear);
     }
 
+
+    const handlePageChange = (newPage: number) => {
+        setCurrentPage(newPage);
+    };
+
+    const getPageNumbers = () => {
+        if (!pagination) return [];
+
+        const { currentPage, totalPages } = pagination;
+        const pages = [];
+        const maxVisiblePages = 5;
+
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(i);
+        }
+
+        return pages;
+    };
+
+    console.log(pagination);
     const clearAllFilters = () => {
         setSelectedYear(null);
         setTimeRange(optionsMy[0]);
@@ -116,20 +182,11 @@ export default function Home() {
     return (
         <div className='w-full'>
             <div className="p-4 space-y-6">
-                <h1 className="text-2xl font-bold">Statistika menadžera</h1>
+                <h1 className="!text-3xl font-bold">Statistika menadžera</h1>
 
+                {/* Filters and Search */}
                 <div className="flex gap-3 items-center flex-wrap">
-                    <div className="w-64">
-                        <Select
-                            options={optionsMy}
-                            onChange={handleTimeRangeChange}
-                            value={timeRange}
-                            className="react-select-container"
-                            classNamePrefix="react-select"
-                            isSearchable={false}
-                            placeholder="Izaberite vremenski opseg..."
-                        />
-                    </div>
+
                     <div className="w-64">
                         <Select
                             options={availableYears}
@@ -141,6 +198,15 @@ export default function Home() {
                             placeholder="Izaberite godinu..."
                         />
                     </div>
+                    <div className="w-64">
+                        <MyInput
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Pretraži menadžere..."
+                            contentBefore={<Search24Regular />}
+                        />
+                    </div>
+
                     <Button
                         onClick={clearAllFilters}
                         icon={<Dismiss24Regular />}
@@ -172,6 +238,15 @@ export default function Home() {
                     </div>
                 </div>
 
+                {/* Pagination Info */}
+                {pagination && (
+                    <div className="flex justify-between items-center text-sm text-gray-600">
+                        <div>
+                            Prikazano {((pagination.currentPage - 1) * pagination.itemsPerPage) + 1} - {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} od {pagination.totalItems} rezultata
+                        </div>
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="flex justify-center items-center h-64">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -193,7 +268,7 @@ export default function Home() {
                                                 <Legend />
                                                 {stats.map((manager, index) => (
                                                     <Bar
-                                                        key={manager.managerId}
+                                                        key={`bar-${manager.managerId}-${index}`}  // ← Kombinuj ID i index
                                                         dataKey={manager.managerName}
                                                         fill={COLORS[index % COLORS.length]}
                                                     />
@@ -208,7 +283,7 @@ export default function Home() {
                                                 <Legend />
                                                 {stats.map((manager, index) => (
                                                     <Line
-                                                        key={manager.managerId}
+                                                        key={`bar-${manager.managerId}-${index}`}  // ← Kombinuj ID i index
                                                         type="monotone"
                                                         dataKey={manager.managerName}
                                                         stroke={COLORS[index % COLORS.length]}
@@ -336,8 +411,8 @@ export default function Home() {
                                     </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                    {stats.map((manager) => (
-                                        <tr key={manager.managerId}>
+                                    {stats.map((manager,index) => (
+                                        <tr key={`manager-row-${manager.managerId}-${index}`}>
                                             <td className="px-6 py-4 whitespace-nowrap">{manager.managerName}</td>
                                             <td className="px-6 py-4 whitespace-nowrap">{manager.studentCount}</td>
                                             <td className="px-6 py-4 whitespace-nowrap">
@@ -366,6 +441,40 @@ export default function Home() {
                                 </table>
                             </div>
                         </div>
+
+                        {/* Pagination */}
+                        {pagination && pagination.totalPages > 1 && (
+                            <div className="flex justify-center items-center space-x-2">
+                                <Button
+                                    onClick={() => handlePageChange(pagination.currentPage - 1)}
+                                    disabled={!pagination.hasPreviousPage}
+                                    icon={<ChevronLeft24Regular />}
+                                    appearance="subtle"
+                                >
+                                    Prethodna
+                                </Button>
+
+                                {getPageNumbers().map((pageNumber) => (
+                                    <Button
+                                        key={`page-btn-${pageNumber}`}
+                                        onClick={() => handlePageChange(pageNumber)}
+                                        appearance={pageNumber === pagination.currentPage ? "primary" : "secondary"}
+                                    >
+                                        {pageNumber}
+                                    </Button>
+                                ))}
+
+                                <Button
+                                    onClick={() => handlePageChange(pagination.currentPage + 1)}
+                                    disabled={!pagination.hasNextPage}
+                                    iconPosition="after"
+                                    icon={<ChevronRight24Regular />}
+                                    appearance="subtle"
+                                >
+                                    Sledeća
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -375,8 +484,6 @@ export default function Home() {
             <div className='skola-ucenici-block'>
                 <SchoolEnrollmentStats></SchoolEnrollmentStats>
             </div>
-
         </div>
-
     );
 }

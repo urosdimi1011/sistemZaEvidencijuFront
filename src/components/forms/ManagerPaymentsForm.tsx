@@ -1,15 +1,16 @@
 import axios from 'axios';
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {MyInput} from "../ui/MyInput";
 import * as yup from 'yup';
 import { useForm, Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import toast from "react-hot-toast";
-import {Field, Textarea} from "@fluentui/react-components";
+import {Button, Field, Textarea} from "@fluentui/react-components";
 import api from "../../api";
 interface Paymant {
     iznosZaUplatu: number;
-    desc?: string
+    desc?: string;
+    datumIsplate: string;
 }
 
 interface PaymantResponse {
@@ -33,7 +34,8 @@ export default function ManagerPaymentsForm({id,idMenadzera,ukupnoMenadzeru,preo
     const [uplate, setUplate] = useState([]);
     const [error, setError] = useState<string | null>(null);
     const [form, setForm] = useState<Paymant>({
-        iznosZaUplatu: 0
+        iznosZaUplatu: 0,
+        datumIsplate : ''
     });
 
 
@@ -44,24 +46,22 @@ export default function ManagerPaymentsForm({id,idMenadzera,ukupnoMenadzeru,preo
         setForm(prev => ({...prev,[name]:value}));
     };
 
-    const daLiTrebaJosDaSeUplati = ()=>{
-        console.log(uplate.reduce((prev,curr)=>Number(prev.amount) + Number(curr.amount),0) ,ukupnoMenadzeru);
-        return uplate.reduce((prev,curr)=>Number(prev.amount) + Number(curr.amount),0) > ukupnoMenadzeru;
-    }
+    const daLiTrebaJosDaSeUplati = useCallback(()=>{
+        return uplate.reduce((prev,curr)=>Number(prev) + Number(curr.amount),0) == ukupnoMenadzeru;
+    },[uplate])
 
     const dohvatiMenadzeroveUplate = async ()=>{
         try{
             setLoading(true);
-            const response = await api.get(`/menadzeri/isplate/${idMenadzera}`);
+            const response = await api.get(`/menadzeri/isplate/${idMenadzera}`,{params:{studentId : id}});
             setUplate(response.data);
             setLoading(false);
         }
         catch (xhr){
             setLoading(false);
             if(xhr.status === 404){
-
+                setError(xhr.response.data.message)
             }
-            console.log(xhr);
         }
 
     }
@@ -81,8 +81,9 @@ export default function ManagerPaymentsForm({id,idMenadzera,ukupnoMenadzeru,preo
             );
             setLoading(false);
 
-            setForm({ iznosZaUplatu : 0 });
+            setForm({ iznosZaUplatu : 0,datumIsplate : '' });
             toast.success(response.data.message);
+            onSuccess(true);
         } catch (err: any) {
             setLoading(false);
             setError(err.response?.data?.message || err.message);
@@ -97,8 +98,14 @@ export default function ManagerPaymentsForm({id,idMenadzera,ukupnoMenadzeru,preo
 
 
     const schema = yup.object({
-        iznosZaUplatu: yup.number().min(2,'Morate uneti barem 2 cifre'),
-        desc : yup.string()
+        iznosZaUplatu: yup
+            .number()
+            .typeError('Morate uneti cifru za plaćanje')
+            .required('Morate uneti vrednost')
+            .min(1, 'Vrednost mora biti veća od 0')
+            .positive('Vrednost mora biti pozitivna'),
+        desc : yup.string().nullable(),
+        datumIsplate: yup.string().required('Morate uneti datum isplate')
     }).required();
 
     const {
@@ -108,12 +115,12 @@ export default function ManagerPaymentsForm({id,idMenadzera,ukupnoMenadzeru,preo
     } = useForm<Paymant>({
         resolver: yupResolver(schema) as Resolver<Paymant, object, Paymant>
     });
-
+    console.log(daLiTrebaJosDaSeUplati())
     const prikaziOpisZaPlacanje = ()=>{
         if(hasDescription){
             return (
                 <>
-                    <Field  name='desc' label="Unesite napomenu">
+                    <Field name='desc' label="Unesite napomenu">
                         <Textarea placeholder="Unesite napomenu..." name='desc' {...register('desc')}/>
                     </Field>
                     {errors.desc && <div className="text-red-900 text-shadow">{errors.desc.message}</div>}
@@ -124,19 +131,28 @@ export default function ManagerPaymentsForm({id,idMenadzera,ukupnoMenadzeru,preo
     }
     return (
         <>
-            <h3 className='my-2'>Menadzeru je ukupno potrebno isplatiti <strong>{ukupnoMenadzeru.toFixed(2)}&euro;</strong>, preostalo: <strong>{preostaloMenadzeru.toFixed(2)}&euro;</strong></h3>
+            <h3 className='text-lg my-2'>Menadzeru je ukupno potrebno isplatiti <strong>{ukupnoMenadzeru.toFixed(2)}&euro;</strong>,
+                <span>
+                    {!daLiTrebaJosDaSeUplati() ?
+                        (<span className='block'> Preostalo: <strong>{preostaloMenadzeru.toFixed(2)}&euro;</strong></span>)
+                        : (<span className='text-green-700 font-bold block'> Sve je plaćeno!</span>)
+                    }
+                </span>
+            </h3>
             <form onSubmit={handleSubmit(onSubmit)}>
 
-                <MyInput type='number' {...register('iznosZaUplatu')} label={'Unesite koliko je menadzeru isplaceno?'} name={'iznosZaUplatu'} onChange={handleChange}></MyInput>
+                <MyInput autoFocus  type='number' {...register('iznosZaUplatu')} label={'Unesite koliko je menadzeru isplaceno?'} name={'iznosZaUplatu'}></MyInput>
                 {errors.iznosZaUplatu && <div className="text-red-900 text-shadow">{errors.iznosZaUplatu.message}</div>}
+                <MyInput  {...register('datumIsplate')} type='datetime-local' label={'Datum kada menadzer dobio novac'} name={'datumIsplate'}/>
+                {errors.datumIsplate && <div className="text-red-900 text-shadow">{errors.datumIsplate.message}</div>}
                 {prikaziOpisZaPlacanje()}
                 <div className='opis'>
-                    <button onClick={dodajOpisZaPlacanje} className='!bg-[#0f6cbd] !text-gray-50 !py-1 !px-2 !text-xs my-2'>{hasDescription ? 'Ukloni' : 'Dodaj'} opis</button>
+                    <button type="button" onClick={dodajOpisZaPlacanje} className='!bg-[#0f6cbd] !text-gray-50 !py-1 !px-2 !text-xs my-2'>{hasDescription ? 'Ukloni' : 'Dodaj'} opis</button>
                 </div>
 
-                <button className='my-5' type="submit" disabled={loading && daLiTrebaJosDaSeUplati()}>
+                <Button className='!my-5' type="submit" disabled={loading || daLiTrebaJosDaSeUplati()}>
                     {loading ? 'Sačekajte...' : 'Dodaj iznos za uplatu'}
-                </button>
+                </Button>
                 {error && <div className="error text-red-900 font-bold my-3">{error}</div>}
             </form>
         </>

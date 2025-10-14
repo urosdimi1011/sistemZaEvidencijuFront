@@ -11,8 +11,11 @@
 .modal-content {
     background: #fff;
     border-radius: 8px;
-    max-width: 500px;
+    max-width: 670px;
     width: 90%;
+    height: max-content;
+    max-height: 100vh;
+    overflow-y: scroll;
     box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     /*overflow: hidden;*/
 }

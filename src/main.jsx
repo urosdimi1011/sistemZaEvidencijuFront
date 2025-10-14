@@ -10,18 +10,35 @@ import Managers from "@src/routes/Managers.js";
 import './App.css';
 import {FluentProvider, webLightTheme} from '@fluentui/react-components';
 import Students from "@src/routes/Students.js";
-import TestToaster from "@src/routes/TestToast.js";
-// import {ToastProvider} from "@src/components/ui/ToastContext.js";
 import { Toaster } from 'react-hot-toast';
 import Login from "@src/routes/Login.js";
 import AuthProvider from "@src/Provides/AuthProvider.js";
 import ReverseProtectedRoute from "@src/components/route/ReverseProtectedRoute.js";
 import Home from "@src/routes/Home.js";
 import ExpectedPayments from "@src/routes/ExpectedPayments.js";
+
+import { registerSW } from 'virtual:pwa-register'
+import ProtectedRoute from "./routes/ProtectedRoute.js";
+import Users from "./routes/Users.js";
+
+const updateSW = registerSW({
+    onNeedRefresh() {
+        console.log("New content available, refresh needed.")
+    },
+    onOfflineReady() {
+        console.log("App ready to work offline")
+    },
+})
+
 const router = createBrowserRouter([
     {
         path:"/",
-        element : <MainLayout/>,
+        element :
+                <ProtectedRoute
+                    requiredPermission="manage_managers"
+                >
+                    <MainLayout/>
+                </ProtectedRoute>,
         children: [
             {
                 path:"",
@@ -31,7 +48,12 @@ const router = createBrowserRouter([
     },
     {
         path:"/ocekivane-uplate",
-        element : <MainLayout/>,
+        element :
+            <ProtectedRoute
+                requiredPermission="manage_managers"
+            >
+                <MainLayout/>
+            </ProtectedRoute>,
         children: [
             {
                 path:"",
@@ -40,8 +62,28 @@ const router = createBrowserRouter([
         ]
     },
     {
+        path:"/korisnici",
+        element :
+            <ProtectedRoute
+                requiredPermission="manage_managers"
+            >
+                <MainLayout/>
+            </ProtectedRoute>,
+        children: [
+            {
+                path:"",
+                element:<Users/>
+            }
+        ]
+    },
+    {
         path:"/menadzeri",
-        element : <MainLayout/>,
+        element :
+            <ProtectedRoute
+                requiredPermission="manage_managers"
+            >
+                <MainLayout/>
+            </ProtectedRoute>,
         children: [
             {
                 path:"",
@@ -61,7 +103,10 @@ const router = createBrowserRouter([
     },
     {
         path:"/login",
-        element : <ReverseProtectedRoute><Login/></ReverseProtectedRoute>,
+        element :
+            <ReverseProtectedRoute>
+                <Login/>
+            </ReverseProtectedRoute>,
     }
 ])
 
