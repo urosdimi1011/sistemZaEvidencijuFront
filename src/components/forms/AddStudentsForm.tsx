@@ -125,7 +125,6 @@ export default function AddStudentsForm({
         otherwise: (schema) => schema.nullable(),
       }),
   });
-  console.log("KOMPONENTA SE MOUNTUJE",++counterMounted.current);
   const {
     register,
     handleSubmit,
@@ -307,6 +306,14 @@ export default function AddStudentsForm({
 
   const getSchools = async () => {
     try {
+      console.log(isSchoolManager);
+      if(isSchoolManager){
+        const endpoint = `/schools/${currentUser.schoolId}`;
+        const response = await api.get(endpoint);
+        const skole = response.data;
+        setSkole(skole);
+        return;
+      }
       const endpoint = "/schools/all";
       const response = await api.get(endpoint);
       const skole = response.data;

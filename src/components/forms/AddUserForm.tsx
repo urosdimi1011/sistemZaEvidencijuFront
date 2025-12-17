@@ -10,7 +10,7 @@ import MyDropdown from "../ui/MyDropdown";
 interface User {
     id?: number;
     email: string;
-    role: 'admin' | 'school_manager' | 'korisnik';
+    role: 'admin' | 'school_manager';
     schoolId?: number | null;
     schoolName?: string | null;
     passwordMy?: string| null
@@ -101,14 +101,14 @@ export default function AddUserForm({ onSuccess, user, schools }: AddUserFormPro
 
         } catch (err: any) {
             setLoading(false);
-            setError(err.response?.data?.message || err.message || 'Došlo je do greške');
+            console.log(err);
+            setError(err.response?.data?.error || err.response?.data?.message || err.message || 'Došlo je do greške');
         }
     }
 
     const roleOptions = [
         { value: 'admin', label: 'Administrator' },
-        { value: 'school_manager', label: 'Menadžer škole' },
-        { value: 'korisnik', label: 'Korisnik' }
+        { value: 'school_manager', label: 'Menadžer škole' }
     ];
 
     const schoolOptions = schools.map(school => ({

@@ -116,7 +116,6 @@ export default function StudentsCore() {
             if (debouncedSearch && !resetSearch) {
                 params.search = debouncedSearch;
             }
-            console.log(datePicker);
             if (datePicker) {
                 params.date = datePicker;
             }

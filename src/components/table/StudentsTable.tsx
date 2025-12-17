@@ -26,8 +26,8 @@ const columns = [
     { columnKey: "zanimanje", label: "Zanimanje učenika", showFor: ['admin', 'school_manager'], sortable: false },
     { columnKey: "type", label: "Tip učenika", showFor: ['admin', 'school_manager'], sortable: false },
     { columnKey: "entry_type", label: "Tip učenika", showFor: ['admin', 'school_manager'], sortable: false },
-    { columnKey: "cenaSkolarine", label: "Cena školarine", showFor: ['admin', 'school_manager'], sortable: true },
-    { columnKey: "literature", label: "Literatura", showFor: ['admin', 'school_manager'], sortable: false },
+    { columnKey: "cenaSkolarine", label: "Cena školarine", showFor: ['admin'], sortable: true },
+    { columnKey: "literature", label: "Literatura", showFor: ['admin'], sortable: false },
     { columnKey: "procenatMenadzeru", label: "Procenat menadžeru", showFor: ['admin'], sortable: false },
     { columnKey: "menadzer", label: "Menadžer za studenta", showFor: ['admin','school_manager'], sortable: false },
     { columnKey: "actions", label: "Akcija", showFor: ['admin'], sortable: false },
@@ -112,14 +112,16 @@ function StudentTable({
     );
 
     const daLiSuObojeniRedovi = (student : Student) => {
-        if (obojeniRedovi) return obojeniRedoviZaSkolarinu(student);
+        console.log(student);
+        if (obojeniRedovi || (!obojeniRedovi && isSchoolManager)) return obojeniRedoviZaSkolarinu(student);
         if (obojeniRedoviZaMenadzere) return obojeniRedoviZaMenadzera(student);
         return '';
     };
 
     const obojeniRedoviZaSkolarinu = (student : Student) => {
+        console.log("Uslii ovbde posto je ovaj account schooldManager",student);
         if (student.preostaliDug === 0) return 'bg-green-600 !text-gray-50 hover:!bg-green-600';
-        if (student.preostaliDug > 0) return 'bg-red-600 !text-gray-50 hover:!bg-red-600';
+        if (student.preostaliDug > 0 && !isSchoolManager) return 'bg-red-600 !text-gray-50 hover:!bg-red-600';
     };
 
     const obojeniRedoviZaMenadzera = (student : Student) => {
@@ -159,10 +161,9 @@ function StudentTable({
                 prezime: student.prezime,
                 zanimanje: student.zanimanje,
                 type: student.type,
+                preostaliDug: student.preostaliDug,
                 entry_type: student.entry_type,
-                literature: student.literature,
                 menadzer : student.menadzer,
-                cenaSkolarine: student.cenaSkolarine,
                 datumKreiranja: student.datumKreiranja,
             }));
         } else if (isAdmin) {

@@ -14,7 +14,7 @@ import UserModal from "../components/modal/user/UserModal";
 interface User {
     id?: number;
     email: string;
-    role: 'admin' | 'school_manager' | 'korisnik';
+    role: 'admin' | 'school_manager';
     schoolId?: number | null;
     schoolName?: string | null;
     createdAt: string;
@@ -135,8 +135,7 @@ function Users() {
 
     const roleOptions = [
         { key: 'admin', text: 'Administrator' },
-        { key: 'school_manager', text: 'Menadžer škole' },
-        { key: 'korisnik', text: 'Korisnik' }
+        { key: 'school_manager', text: 'Menadžer škole' }
     ];
 
     if (loading) {
